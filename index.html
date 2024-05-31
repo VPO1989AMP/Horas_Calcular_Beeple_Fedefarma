@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <title>Horas BeConstant</title>
+    <style>
+        /* Estilos personalizados para el spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+        }
+        .spinner-border {
+            width: 5rem;
+            height: 5rem;
+            border-width: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Spinner overlay -->
+        <div id="spinner" class="spinner-overlay" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <!-- Formulario -->
+        <form id="horasForm" action="/calcularHoras" method="post">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label for="departamento" class="form-label">Departamento</label>
+                    <select id="departamento" name="departamento" class="form-select" required>
+                        <!-- Las opciones se agregarán dinámicamente aquí -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="fechadesde" class="form-label">Fecha desde</label>
+                    <input type="date" id="fechadesde" name="fechadesde" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="fechahasta" class="form-label">Fecha hasta</label>
+                    <input type="date" id="fechahasta" name="fechahasta" class="form-control" required>
+                </div>
+            </div>
+            <div class="col-md-3 mt-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <button type="submit" class="btn btn-primary">Calcular</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Cargar departamentos
+            $.ajax({
+                url: '/obtenerDepartamentos',
+                method: 'POST',
+                success: function(data) {
+                    var departamentoSelect = $('#departamento');
+                    departamentoSelect.empty();
+                    data.forEach(function(departamento) {
+                        departamentoSelect.append(`<option value="${departamento.id}">${departamento.name}</option>`);
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener los departamentos:', error);
+                }
+            });
+
+            // Mostrar spinner al enviar el formulario
+            $('#horasForm').on('submit', function(e) {
+                $('#spinner').show();
+
+                // Manejo del estado del historial
+                history.pushState({ spinnerVisible: true }, '');
+            });
+
+            // Manejar la navegación de regreso
+            window.onpopstate = function(event) {
+                if (event.state && event.state.spinnerVisible) {
+                    $('#spinner').hide();
+                }
+            };
+        });
+    </script>
+</body>
+</html>
