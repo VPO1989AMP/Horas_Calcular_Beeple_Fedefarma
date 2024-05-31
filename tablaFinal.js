@@ -82,8 +82,8 @@ function HorasYAusenciasNoJustificadas(tablaFinal,workhoursFiltrados){
         }
         // Actualizamos valor de horas y de ANJ
         item["horas_totales"] = horasTotales.toFixed(2);
-        item["horas_nocturnas"] = horasNocturnas;
-        item["horas_diurnas"] = horasDiurnas;
+        item["horas_nocturnas"] = horasNocturnas.toFixed(2);
+        item["horas_diurnas"] = horasDiurnas.toFixed(2);
         item["total_ANJ"] = totalANJ
     }    
 }

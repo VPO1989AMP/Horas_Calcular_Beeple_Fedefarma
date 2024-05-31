@@ -124,9 +124,9 @@ app.post("/calcularHoras", async (req, res) => {
                     "duration_work": duration.asHours(),
                     "start_confirmed_rounded":horaInicioRounded,
                     "end_confirmed_rounded":horaFinalRounded,
-                    "duration_work_night_hours":horasNocturnas.toFixed(2),
-                    "duration_work_day_hours":horasDiurnas.toFixed(2),
-                    "duration_break_hours":horasDescanso.toFixed(2),
+                    "duration_work_night_hours":horasNocturnas,
+                    "duration_work_day_hours":horasDiurnas,
+                    "duration_break_hours":horasDescanso,
                     "duration_work_rounded":horasTrabajadas-horasDescanso,
                     //"duration_work_rounded": durationRounded 
                 };
