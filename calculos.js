@@ -210,7 +210,7 @@ function calcularHorasDescanso(descanso) {
         const totalHours = hours + (minutes / 60);
         // Redondear el resultado a dos decimales
         const roundedTotalHours = Math.round(totalHours * 100) / 100;
-        console.log("DESCANSO",descanso,roundedTotalHours)
+        //console.log("DESCANSO",descanso,roundedTotalHours)
         return roundedTotalHours;
         
     }else{
