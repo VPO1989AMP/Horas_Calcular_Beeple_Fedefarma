@@ -31,10 +31,13 @@ function ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray,datesObject
             "collaborator_jornada": item.collaborator_detail["Jornada"], 
             "collaborator_cod_net4": item.collaborator_detail["Código trabajador NET4"], 
             "collaborator_dni_nie": item.collaborator_dninie, 
+            "collaborator_contract_type": item.collaborator_contract_type, 
             ...datesObject,
             "horas_totales": horasTotales, 
             "horas_nocturnas":horasNocturnas,
             "horas_diurnas":horasDiurnas,
+            "horas_sabado":0,
+            "horas_domingo":0,
             "max_horas_complementarias":maxHorasComplementarias,
             "total_ANJ": 0,
             "dias_vacaciones_periodo":0,
@@ -51,6 +54,8 @@ function HorasYAusenciasNoJustificadas(tablaFinal,workhoursFiltrados){
         let horasTotales = 0
         let horasNocturnas = 0
         let horasDiurnas = 0
+        let horasSabado = 0
+        let horasDomingo = 0
         let totalANJ = 0
         //BUSQUEDA DE HORAS TRABAJADAS + AUSENCIAS NO JUSTIFICADAS
         for (const key in item) {
@@ -71,6 +76,14 @@ function HorasYAusenciasNoJustificadas(tablaFinal,workhoursFiltrados){
                         horasTotales = horasTotales + workhour.duration_work_rounded
                         horasDiurnas = horasDiurnas + workhour.duration_work_day_hours
                         horasNocturnas = horasNocturnas + workhour.duration_work_night_hours
+                        if ((new Date(key)).getDay()===6){
+                            horasSabado = horasSabado + workhour.duration_work_rounded
+                            //console.log("SABADO",key,horasSabado)
+                        }
+                        if ((new Date(key)).getDay()===0){
+                            horasDomingo = horasDomingo +  workhour.duration_work_rounded
+                            //console.log("DOMINGO",key,horasDomingo)
+                        }
                     } else {
                         //console.log("paso")
                         item[key] = "ANJ"
@@ -84,6 +97,8 @@ function HorasYAusenciasNoJustificadas(tablaFinal,workhoursFiltrados){
         item["horas_totales"] = horasTotales.toFixed(2);
         item["horas_nocturnas"] = horasNocturnas.toFixed(2);
         item["horas_diurnas"] = horasDiurnas.toFixed(2);
+        item["horas_sabado"] = horasSabado.toFixed(2);
+        item["horas_domingo"] = horasDomingo.toFixed(2);
         item["total_ANJ"] = totalANJ
     }    
 }

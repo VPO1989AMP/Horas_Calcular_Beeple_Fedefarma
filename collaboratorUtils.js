@@ -33,6 +33,16 @@ const getColaboratorDetail = async (headers, endpoint, collaboratorId) => {
 
         // Crear un nuevo objeto con los campos deseados
         const desiredFields = {}
+            //Añadimos el tipo de contrato
+            if (collaboratorInfo.default_contract_type==="contractual"){
+                desiredFields["collaborator_type_contract"]="GESGRUP"
+            }else if(collaboratorInfo.default_contract_type==="interim"){
+                desiredFields["collaborator_type_contract"]="P7"
+            }else if(collaboratorInfo.default_contract_type==="intern"){
+                desiredFields["collaborator_type_contract"]="SUBROGADO CTC"
+            }
+
+            //Documento
             if (collaboratorInfo.national_identification_be != null && collaboratorInfo.national_identification_be !=""){
                 desiredFields["dniNie"] = collaboratorInfo.national_identification_be
             }else if(collaboratorInfo.national_identification_de != null && collaboratorInfo.national_identification_de !=""){
