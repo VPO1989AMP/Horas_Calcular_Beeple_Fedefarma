@@ -38,8 +38,8 @@
         <form id="horasForm" action="/calcularHoras" method="post">
             <div class="row align-items-end">
                 <div class="col-md-6">
-                    <label for="departamento" class="form-label">Departamento</label>
-                    <select id="departamento" name="departamento" class="form-select" required>
+                    <label for="departamento1" class="form-label">Departamento</label>
+                    <select id="departamento1" name="departamento" class="form-select" required>
                         <!-- Las opciones se agregarán dinámicamente aquí -->
                     </select>
                 </div>
@@ -62,6 +62,21 @@
                 </div>
             </div>
         </form>
+        <form id="festivosForm" action="javascript:void(0);" method="post">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label for="departamento2" class="form-label">Departamento</label>
+                    <select id="departamento2" name="departamento" class="form-select" required>
+                        <!-- Las opciones se agregarán dinámicamente aquí -->
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <button type="submit" class="btn btn-primary">Ver festivos</button>
+                </div>
+            </div>
+        </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -72,10 +87,14 @@
                 url: '/obtenerDepartamentos',
                 method: 'POST',
                 success: function(data) {
-                    var departamentoSelect = $('#departamento');
-                    departamentoSelect.empty();
+                    var departamentoSelect1 = $('#departamento1');
+                    var departamentoSelect2 = $('#departamento2');
+                    departamentoSelect1.empty();
+                    departamentoSelect2.empty();
                     data.forEach(function(departamento) {
-                        departamentoSelect.append(`<option value="${departamento.id}">${departamento.name}</option>`);
+                        var option = `<option value="${departamento.id}">${departamento.name}</option>`;
+                        departamentoSelect1.append(option);
+                        departamentoSelect2.append(option);
                     });
                 },
                 error: function(xhr, status, error) {
@@ -99,5 +118,122 @@
             };
         });
     </script>
+    <script>
+    $(document).ready(function() {
+        // Cargar departamentos
+        $.ajax({
+            url: '/obtenerDepartamentos',
+            method: 'POST',
+            success: function(data) {
+                var departamentoSelect1 = $('#departamento1');
+                var departamentoSelect2 = $('#departamento2');
+                departamentoSelect1.empty();
+                departamentoSelect2.empty();
+                data.forEach(function(departamento) {
+                    var option = `<option value="${departamento.id}">${departamento.name}</option>`;
+                    departamentoSelect1.append(option);
+                    departamentoSelect2.append(option);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al obtener los departamentos:', error);
+            }
+        });
+
+        // Mostrar spinner al enviar el formulario
+        $('#horasForm').on('submit', function(e) {
+            $('#spinner').show();
+
+            // Manejo del estado del historial
+            history.pushState({ spinnerVisible: true }, '');
+        });
+
+        // Manejar la navegación de regreso
+        window.onpopstate = function(event) {
+            if (event.state && event.state.spinnerVisible) {
+                $('#spinner').hide();
+            }
+        };
+
+        // Interceptar el evento de envío del formulario de festivos
+        $('#festivosForm').on('submit', function(e) {
+            e.preventDefault(); // Prevenir el comportamiento por defecto
+            var departamento = $('#departamento2').val();
+            
+            $.ajax({
+                url: '/festivos',
+                method: 'POST',
+                data: { departamento: departamento },
+                success: function(data) {
+                    // Manejar la respuesta aquí, por ejemplo, mostrar los festivos en un modal o en la página
+                    console.log('Festivos:', data);
+                    // Aquí puedes actualizar tu UI para mostrar los datos de festivos
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener los festivos:', error);
+                }
+            });
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        // Cargar departamentos
+        $.ajax({
+            url: '/obtenerDepartamentos',
+            method: 'POST',
+            success: function(data) {
+                var departamentoSelect1 = $('#departamento1');
+                var departamentoSelect2 = $('#departamento2');
+                departamentoSelect1.empty();
+                departamentoSelect2.empty();
+                data.forEach(function(departamento) {
+                    var option = `<option value="${departamento.id}">${departamento.name}</option>`;
+                    departamentoSelect1.append(option);
+                    departamentoSelect2.append(option);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al obtener los departamentos:', error);
+            }
+        });
+
+        // Mostrar spinner al enviar el formulario
+        $('#horasForm').on('submit', function(e) {
+            $('#spinner').show();
+
+            // Manejo del estado del historial
+            history.pushState({ spinnerVisible: true }, '');
+        });
+
+        // Manejar la navegación de regreso
+        window.onpopstate = function(event) {
+            if (event.state && event.state.spinnerVisible) {
+                $('#spinner').hide();
+            }
+        };
+
+        // Interceptar el evento de envío del formulario de festivos
+        $('#festivosForm').on('submit', function(e) {
+            e.preventDefault(); // Prevenir el comportamiento por defecto
+            var departamento = $('#departamento2').val();
+            
+            $.ajax({
+                url: '/festivos',
+                method: 'GET',
+                data: { departamento: departamento },
+                success: function(data) {
+                    // Manejar la respuesta aquí, por ejemplo, mostrar los festivos en un modal o en la página
+                    console.log('Festivos:', data);
+                    // Aquí puedes actualizar tu UI para mostrar los datos de festivos
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener los festivos:', error);
+                }
+            });
+        });
+    });
+</script>
+
 </body>
 </html>

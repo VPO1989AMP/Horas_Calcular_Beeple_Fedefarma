@@ -2,7 +2,7 @@ const bodyParser = require("body-parser");
 const moment = require("moment");
 const {transformarDia} = require('./calculos');
 
-function ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray,datesObject,diasTotales) {
+function ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray,datesObject,diasTotales,desde,hasta,festivosDepartamento) {
     // Recorremos la tabla uniqueCollaboratorsArray que sabemos que tiene 1 único objeto con un id de colaborador
     // y partir de ella generamos la nueva tabla con los campos que necesitamos
     uniqueCollaboratorsArray.forEach(item => {
@@ -15,11 +15,8 @@ function ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray,datesObject
     let horasNocturnas = 0;
     let horasDiurnas = 0;
     let maxHorasComplementarias =0
-    if (diasTotales>0 && parseFloat(item.collaborator_detail["Horas contrato semana"]) && parseFloat(item.collaborator_detail["Horas contrato semana"]) < 40){
-        calcMaxHorasComplementarias=(40-parseFloat(item.collaborator_detail["Horas contrato semana"]))*(diasTotales/7)
-        maxHorasComplementarias = parseFloat(calcMaxHorasComplementarias.toFixed(2))
-        //console.log("Max.H.Comp.",maxHorasComplementarias)
-    }
+    maxHorasComplementarias = calcularHorasComplementarias(item,diasTotales,desde,hasta,festivosDepartamento)
+    
     // Creamos un objeto para representar una fila de la tabla
         const filaTabla = {
             "collaborator_id": item.collaborator_id,
@@ -259,6 +256,91 @@ function VacacionesPeriodoSeleccionado(tablaFinal,uniqueCollaboratorsArray,vacac
         }
     }
 }
+
+
+function calcularHorasComplementarias(item, diasTotales, desde, hasta, festivosDepartamento) {
+    // Método antiguo para calcular las horas max complementarias (comentado, no usado)
+    /*
+    if (false) {
+        if (diasTotales > 0 && parseFloat(item.collaborator_detail["Horas contrato semana"]) && parseFloat(item.collaborator_detail["Horas contrato semana"]) < 40) {
+            let calcMaxHorasComplementarias = (40 - parseFloat(item.collaborator_detail["Horas contrato semana"])) * (diasTotales / 7);
+            return parseFloat(calcMaxHorasComplementarias.toFixed(2));
+        } else {
+            return 0;
+        }
+    }
+    */
+
+    let alta = item.collaborator_detail['Fecha Alta'] ? moment(item.collaborator_detail['Fecha Alta']) : null;
+    let baja = item.collaborator_detail['Fecha baja'] ? moment(item.collaborator_detail['Fecha baja']) : null;
+
+    //console.log("Logica de saber que fechas comprenden lo teórico");
+    //console.log(moment(desde), moment(hasta), alta, baja, item.collaborator_detail["Jornada"], item.collaborator_detail["Horas contrato dia"], festivosDepartamento);
+    let devolucionFuncionHorasComplementarias = 0
+    // Calculo de horas máx complementarias
+    if (alta !== null) {
+        if (alta.isSameOrBefore(moment(desde)) && (baja === null || baja.isSameOrAfter(moment(hasta)))) {
+            //console.log("1", moment(desde), moment(hasta));
+            devolucionFuncionHorasComplementarias = devolverHorasComplementarias(moment(desde), moment(hasta), item.collaborator_detail["Jornada"], item.collaborator_detail["Horas contrato dia"], festivosDepartamento);
+            return  devolucionFuncionHorasComplementarias
+            //console.log(devolucionFuncionHorasComplementarias)
+        } else if (alta.isSameOrAfter(moment(desde)) && alta.isSameOrBefore(moment(hasta)) && (baja === null || baja.isSameOrAfter(moment(hasta)))) {
+            //console.log("2");
+            devolucionFuncionHorasComplementarias = devolverHorasComplementarias(alta, moment(hasta), item.collaborator_detail["Jornada"], item.collaborator_detail["Horas contrato dia"], festivosDepartamento);
+            return devolucionFuncionHorasComplementarias
+            //console.log(devolucionFuncionHorasComplementarias)
+        } else if (alta.isSameOrBefore(moment(desde)) && baja !== null && baja.isSameOrAfter(moment(desde)) && baja.isSameOrBefore(moment(hasta))) {
+            //console.log("3");
+            devolucionFuncionHorasComplementarias = devolverHorasComplementarias(moment(desde), baja, item.collaborator_detail["Jornada"], item.collaborator_detail["Horas contrato dia"], festivosDepartamento);
+            return devolucionFuncionHorasComplementarias
+            //console.log(devolucionFuncionHorasComplementarias)
+        } else if (alta.isSameOrAfter(moment(desde)) && alta.isSameOrBefore(moment(hasta)) && baja !== null && baja.isSameOrAfter(moment(desde)) && baja.isSameOrBefore(moment(hasta))) {
+            //console.log("4");
+            devolucionFuncionHorasComplementarias = devolverHorasComplementarias(alta, baja, item.collaborator_detail["Jornada"], item.collaborator_detail["Horas contrato dia"], festivosDepartamento);
+            return devolucionFuncionHorasComplementarias
+            //console.log(devolucionFuncionHorasComplementarias)
+        } else {
+            //console.log("5");
+            return 0;
+        }
+    }
+    return 0;  // Si alta es null
+}
+
+function devolverHorasComplementarias(inicio, fin, jornada, horasDias, festivosDepartamento) {
+    console.log("Dentro de devolverHorasComplementarias");
+    // inicio y fin son fechas moment
+    // jornada es un string tipo "L-MA-MI-J-V" o "S-D"
+    // horasDias son las horas que tiene el trabajador por contrato al día
+    // festivosDepartamento es un array de objetos que indica los festivos del departamento
+    
+    let horasDevolver = 0;
+    let fecha = moment(inicio);  // Asegúrate de que 'inicio' sea una fecha válida para Moment
+    let soloFestivos = jornada === "S-D";
+    while (fecha.isSameOrBefore(fin)) {  // Asegúrate de que 'fin' sea una fecha válida para Moment
+        
+        let diaFecha = fecha.day();
+        let diaFestivo = festivosDepartamento[0].festivos.includes(fecha.format('YYYY-MM-DD'));
+
+        if ((diaFecha === 6 || diaFecha === 0) && soloFestivos && diaFestivo) {
+            // Trabaja fines de semana y festivos
+            horasDevolver += parseFloat(horasDias);
+            //console.log(horasDias)
+            
+        } else if ((diaFecha === 1 || diaFecha === 2 || diaFecha === 3 || diaFecha === 4 || diaFecha === 5 ) && !soloFestivos && !diaFestivo) {
+            // Trabaja de lunes a viernes (no festivos)
+            horasDevolver += parseFloat(horasDias)
+            //console.log(horasDias)
+
+        }
+
+        fecha.add(1, 'days');  // Incrementar la fecha al siguiente día
+    }
+    horasDevolver=parseFloat(horasDevolver*(30/100)).toFixed(2)
+    return (horasDevolver);
+}
+
+
 
 module.exports={
     HorasYAusenciasNoJustificadas,

@@ -8,6 +8,7 @@ const {Calculos, ObtenerNombreMes,roundQuarterHour, calcularDiferenciaHoras, cal
 const Token = require('./token'); // Ruta al archivo token.js
 const { HorasYAusenciasNoJustificadas, AusenciasJustificadas, ConstruccionTablaFinal, Contadores,VacacionesPeriodoSeleccionado } = require('./tablaFinal.js');
 const {masColaboraders} = require('./masColaboradores.js')
+const festivos = require('./festivos.json');
 
 
 const app = express();
@@ -29,6 +30,9 @@ app.post("/calcularHoras", async (req, res) => {
     const mesNumero = (new Date(desde).getMonth());
     const nombreMes = ObtenerNombreMes(mesNumero).toUpperCase()
     const hasta = req.body.fechahasta;
+    console.log(departamento)
+    const festivosDepartamento = festivos.filter(item =>item.departamentoId==departamento)
+    console.log(festivosDepartamento)
     if (password != "Beeple1234"){
         res.send("<h1>Contraseña incorrecta </h1>")
     }else{
@@ -55,26 +59,43 @@ app.post("/calcularHoras", async (req, res) => {
             let allWorkHoursData = []; // Inicializar un array para almacenar todos los datos de horas trabajadas
             
 
-            while (i <= maxPages) {
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+            while (i <= maxPages) {
                 // Realizar la solicitud al servidor para obtener las horas trabajadas
-                //console.log("Buscando datos...")
-                console.log(`${endpoint}/api/v1/admin/collaborators/worked_hours?filter[period][period_start_at]=${desde}&filter[period][period_end_at]=${hasta}&filter[status]=reported&page=${i}&page_items=500`)
-                const workHoursResponse = await axios.get(`${endpoint}/api/v1/admin/collaborators/worked_hours?filter[period][period_start_at]=${desde}&filter[period][period_end_at]=${hasta}&filter[status]=reported&page=${i}&page_items=500`, {
+                console.log(`${endpoint}/api/v1/admin/collaborators/worked_hours?filter[period][period_start_at]=${desde}&filter[period][period_end_at]=${hasta}&filter[status]=reported&page=${i}&page_items=500`);
+                let workHoursResponse
+                try {
+                    workHoursResponse = await axios.get(`${endpoint}/api/v1/admin/collaborators/worked_hours?filter[period][period_start_at]=${desde}&filter[period][period_end_at]=${hasta}&filter[status]=reported&page=${i}&page_items=500`, {
                     headers: headers
                 });
-
+                }catch{
+                    console.log("2do intento llamada API")
+                    workHoursResponse = await axios.get(`${endpoint}/api/v1/admin/collaborators/worked_hours?filter[period][period_start_at]=${desde}&filter[period][period_end_at]=${hasta}&filter[status]=reported&page=${i}&page_items=500`, {
+                        headers: headers
+                    })
+                       
+                }
+            
                 // Agregar los datos devueltos al array allWorkHoursData
                 allWorkHoursData = allWorkHoursData.concat(workHoursResponse.data.worked_hours);
+            
                 // Verificar si se devolvieron datos
-                 if (workHoursResponse.data.next === null) {
+                if (workHoursResponse.data.next === null) {
                     // Si no se devuelven datos, salir del bucle
                     break;
                 }
-
+            
                 // Incrementar el contador de página
                 i++;
+            
+                // Si el contador de página es múltiplo de 3, esperar 2 segundos
+                if (i % 3 === 0) {
+                    console.log('Esperando 2 segundos...');
+                    await delay(2000);
+                }
             }
+            
             console.log("TERMINAMOS API Work hours", new Date())
             console.log("Filtramos horas del proyecto", new Date())
 
@@ -134,7 +155,6 @@ app.post("/calcularHoras", async (req, res) => {
             console.log("TERMINAMOS el crear un array con todos los datos formateados y agregamos otros", new Date())
             
 
-
             //Ahora deberíamos buscar todos los trabajadores que Son del mismo departamento
             //que estamos buscando pero que no tienen horas durante el periodo de tiempo seleccionado
             //Por ejemplo. Imaginemos que un trabajador tiene vacaciones todo ese periodo.
@@ -142,10 +162,16 @@ app.post("/calcularHoras", async (req, res) => {
             //Hay que considerar que sean trabajadores que no tengan fecha de baja 
             //o que si la tienen esté comprendida entre la fecha desde y hasta
             //lo hago todo en otro archivo (masColaboradores.js)
+            console.log('Esperando 2 segundos...');
+                    await delay(2000);
             console.log("INICIAMOS el añadir al array workhoursFiltrados todos los trabajadores que no tienen horas", new Date())
-            await masColaboraders(workhoursFiltrados,headers,endpoint,departamento,desde,hasta)
+            if (true){
+                //Lo desactivo porque en fedefarma siempre aparecen muchos mas trabajadores y no se porque???
+                await masColaboraders(workhoursFiltrados,headers,endpoint,departamento,desde,hasta)
+            }
             console.log("TERMINAMOS el añadir al array workhoursFiltrados todos los trabajadores que no tienen horas", new Date())
-
+            console.log('Esperando 2 segundos...');
+                    await delay(2000);
 
             // Objeto para realizar un seguimiento de los colaboradores únicos
             const uniqueCollaborators = {};
@@ -154,8 +180,14 @@ app.post("/calcularHoras", async (req, res) => {
 
          
             console.log("Montar objeto workhoursFiltrados", new Date())
+            let contador = 0
             for (const item of workhoursFiltrados) {
                 if (!uniqueCollaborators[item.collaborator_id]) {
+                    if (contador % 20 === 0) {
+                        console.log('Esperando 4 segundos...');
+                        await delay(10000);
+                    }
+                    contador = contador + 1
                     uniqueCollaborators[item.collaborator_id] = item.collaborator_name;
                     // Utilizamos async/await dentro de una función asincrónica
                     const availabilityPromise = getAvailability(headers, endpoint, item.collaborator_id, desde, hasta);
@@ -164,13 +196,31 @@ app.post("/calcularHoras", async (req, res) => {
                     
                     // Espera a que se resuelvan ambas promesas antes de agregarlas a uniqueCollaboratorsArray
                     console.log("    API Disponibilidades colaborador", item.collaborator_id, new Date())
-                    const availability = await availabilityPromise;
+                    let availability
+                    try{
+                        availability = await availabilityPromise;
+                    }catch{
+                        console.log("2do intento disponibilidades colaborador")
+                        availability = await availabilityPromise;
+                    }
                     console.log("    TERMINAMOS API Disponibilidades colaborador", item.collaborator_id, new Date())
                     console.log("    API Detalle colaborador colaborador", item.collaborator_id, new Date())
-                    const collaboratorDetail = await collaboratorDetailPromise;
+                    let collaboratorDetail
+                    try{
+                        collaboratorDetail = await collaboratorDetailPromise;
+                    }catch{
+                        console.log("2do intento detalles colaborador")
+                        collaboratorDetail = await collaboratorDetailPromise;
+                    }
                     console.log("    TERMINAMOS API Detalle colaborador", item.collaborator_id, new Date())
                     console.log("    API Contadores colaborador", item.collaborator_id, new Date())
-                    const collaboratorCounters = await collaboratorCountersPromise;
+                    let collaboratorCounters 
+                    try{
+                        collaboratorCounters = await collaboratorCountersPromise;
+                    }catch{
+                        console.log("2do intento contadores colaborador")
+                        collaboratorCounters = await collaboratorCountersPromise;
+                    }
                     console.log("    TERMINAMOS API Contadores colaborador", item.collaborator_id, new Date())
 
 
@@ -183,6 +233,7 @@ app.post("/calcularHoras", async (req, res) => {
                         "collaborator_counters":collaboratorCounters,
                         "collaborator_contract_type":collaboratorDetail.collaborator_type_contract
                     });
+                    
                 }
             }
             console.log("TERMINAMOS Montar objeto workhoursFiltrados", new Date())
@@ -206,7 +257,7 @@ app.post("/calcularHoras", async (req, res) => {
             let tablaFinal = [];
             //Construcción de la tabla final--> Devuelve tablaFinal con una primera de versión de datos vacíos
             console.log("Construccioin tabla final")
-            ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray, datesObject,diasTotales)
+            ConstruccionTablaFinal(tablaFinal, uniqueCollaboratorsArray, datesObject,diasTotales,desde,hasta,festivosDepartamento)
                         
             //hago esto para que me quite los errores de todos los trabajadore que son administradores
             //tablaFinal = tablaFinal.filter(item => item.collaborator_cod_net4 !== null);
@@ -365,6 +416,19 @@ app.post("/obtenerDepartamentos", async (req, res) => {
     } catch (error) {
         res.status(500).send('Error al obtener los departamentos');
     }
+});
+
+
+
+app.post("/festivos", (req, res) => {
+    const departamento = req.query.departamento;
+
+    // Filtra los festivos por el departamento si es necesario
+    // Por ejemplo, si los festivos están almacenados en el archivo festivos.json
+    // y quieres filtrarlos según el departamento
+    const festivosDepartamento = festivos.filter(f => f.departamento_id === departamento);
+
+    res.json(festivosDepartamento);
 });
 
 

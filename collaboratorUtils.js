@@ -1,9 +1,15 @@
 const axios = require("axios");
 const bodyParser = require("body-parser");
+const { subDays, addDays, format } = require('date-fns');
 
 const getAvailability = async (headers, endpoint, idCollaborator, desde, hasta) => {
     const retries = 2;
     const delay = 1000;
+
+    const startDate = new Date(desde);
+    const endDate = new Date(hasta);
+    const dynamicStartDate = format(subDays(startDate, 40), 'yyyy-MM-dd');
+    const dynamicEndDate = format(addDays(endDate, 40), 'yyyy-MM-dd');
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {

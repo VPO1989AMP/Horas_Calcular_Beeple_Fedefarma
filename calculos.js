@@ -1,5 +1,6 @@
 const moment = require("moment");
 
+
 function Calculos(tablaFinal) {
     const tablaResultado = [];
     //console.log("Toda la tabla",tablaFinal);
@@ -234,5 +235,6 @@ module.exports = {
     calcularHorasNocturnas,
     calcularHorasDiurnas,
     transformarDia,
-    calcularHorasDescanso
+    calcularHorasDescanso,
+    transformarDia
 }
