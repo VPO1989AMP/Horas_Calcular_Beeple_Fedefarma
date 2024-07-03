@@ -90,10 +90,10 @@ app.post("/calcularHoras", async (req, res) => {
                 i++;
             
                 // Si el contador de página es múltiplo de 3, esperar 2 segundos
-                if (i % 3 === 0) {
-                    console.log('Esperando 2 segundos...');
-                    await delay(2000);
-                }
+                // if (i % 3 === 0) {
+                //     console.log('Esperando 2 segundos...');
+                //     await delay(2000);
+                // }
             }
             
             console.log("TERMINAMOS API Work hours", new Date())
@@ -172,7 +172,8 @@ app.post("/calcularHoras", async (req, res) => {
             console.log("TERMINAMOS el añadir al array workhoursFiltrados todos los trabajadores que no tienen horas", new Date())
             console.log('Esperando 2 segundos...');
                     await delay(2000);
-
+            
+           
             // Objeto para realizar un seguimiento de los colaboradores únicos
             const uniqueCollaborators = {};
             // Array para almacenar los colaboradores únicos
